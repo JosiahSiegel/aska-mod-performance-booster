@@ -17,7 +17,7 @@ public class PerformancePlugin : BasePlugin
 {
     public const string PluginGuid = "com.community.askaperformancebooster";
     public const string PluginName = "Aska Performance Booster";
-    public const string PluginVersion = "1.1.0";
+    public const string PluginVersion = "1.1.1";
 
     internal static new ManualLogSource Log;
 
