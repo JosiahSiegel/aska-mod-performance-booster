@@ -4,9 +4,21 @@ A BepInEx 6 IL2CPP plugin that gives **+11 to +24 extra FPS** by disabling expen
 
 Every optimization is confirmed working with real benchmark data. Nothing speculative.
 
-## Benchmarks
+## Ultra quality: 35 FPS to 59 FPS (+69%)
 
-Real numbers from controlled testing -- same scene, same location, same time of day:
+| Without Mod -- 35 FPS | With Mod -- 59 FPS |
+|---|---|
+| ![Ultra No Mod](https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/ultra-no_mod-vsync.png) | ![Ultra With Mod](https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/ultra-mod-vsync.png) |
+
+## High quality: 47 FPS to 59 FPS (+26%)
+
+| Without Mod -- 47 FPS | With Mod -- 59 FPS |
+|---|---|
+| ![High No Mod](https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/high-no_mod-vsync.png) | ![High With Mod](https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/high-mod-vsync.png) |
+
+## Full Benchmarks
+
+Same scene, same location, same time of day. All screenshots captured with MSI Afterburner overlay.
 
 | Quality | DLSS | VSync | Without Mod | With Mod | Gain |
 |---------|------|-------|-------------|----------|------|

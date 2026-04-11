@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Aska Performance Booster v${{ steps.version.outputs.version }}"
+          generate_release_notes: true
+          body: |
+            ## Installation
+
+            **r2modman (recommended):** Search for AskaPerformanceBooster in the Aska mod list.
+
+            **Manual:** Download `AskaPerformanceBooster-${{ steps.version.outputs.version }}.zip`, extract, and copy `BepInEx/plugins/AskaPerformanceBooster/AskaPerformanceBooster.dll` to your Aska BepInEx plugins folder.
+
+            **Nexus Mods:** Download `AskaPerformanceBooster-${{ steps.version.outputs.version }}.zip`, extract, and place `BepInEx/plugins/AskaPerformanceBooster/AskaPerformanceBooster.dll` in your Aska game folder.
+
+            > [!NOTE]
+            > Requires [BepInEx 6 IL2CPP (BE #755+)](https://builds.bepinex.dev/projects/bepinex_be). Install via r2modman for the easiest setup.
+
+            ## What this mod does
+
+            - **+11 to +24 FPS** (up to 69% improvement at Ultra) by disabling expensive HDRP pipeline features
+            - **Removes Aska's 60 FPS hard cap** for uncapped frame rates
+            - **Disables shadows on 831+ small objects** to reduce shadow pass workload
+            - **Forces SRP Batcher on** for draw call batching
+            - Safe to install and uninstall — all changes are runtime-only

@@ -6,23 +6,63 @@ Every optimization in this mod has been confirmed working with measurable FPS im
 
 ## Benchmarks
 
-Tested on the same scene, same location, same time of day. All screenshots captured with MSI Afterburner overlay.
+### Ultra quality: 35 FPS to 59 FPS (+69%)
 
-### VSync OFF (uncapped) -- raw FPS gains
+The biggest win. Same scene, same location, same time of day -- VSync ON, no DLSS:
 
-| Quality | DLSS | Without Mod | With Mod | Improvement |
-|---------|------|-------------|----------|-------------|
-| **Medium** | Off | 80 FPS | 92 FPS | **+12 FPS (+15%)** |
-| **High** | Quality | 57 FPS | 68 FPS | **+11 FPS (+19%)** |
+<table>
+<tr>
+<td align="center"><strong>Without Mod -- 35 FPS</strong></td>
+<td align="center"><strong>With Mod -- 59 FPS</strong></td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/ultra-no_mod-vsync.png" width="400"></td>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/ultra-mod-vsync.png" width="400"></td>
+</tr>
+</table>
 
-### VSync ON (60 Hz cap) -- FPS and GPU headroom
+### High quality: 47 FPS to 59 FPS (+26%)
 
-| Quality | DLSS | Without Mod | With Mod | Improvement |
-|---------|------|-------------|----------|-------------|
-| **Medium** | Off | 60 FPS / 79% GPU | 60 FPS / 66% GPU | **13% less GPU load** |
-| **High** | Off | 47 FPS | 59 FPS | **+12 FPS (+26%)** |
-| **Ultra** | Off | 35 FPS | 59 FPS | **+24 FPS (+69%)** |
-| **Ultra** | Balanced | 35 FPS | 54 FPS | **+19 FPS (+54%)** |
+VSync ON, no DLSS:
+
+<table>
+<tr>
+<td align="center"><strong>Without Mod -- 47 FPS</strong></td>
+<td align="center"><strong>With Mod -- 59 FPS</strong></td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/high-no_mod-vsync.png" width="400"></td>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/high-mod-vsync.png" width="400"></td>
+</tr>
+</table>
+
+### Medium quality: 80 FPS to 92 FPS (+15%)
+
+VSync OFF (uncapped), no DLSS:
+
+<table>
+<tr>
+<td align="center"><strong>Without Mod -- 80 FPS</strong></td>
+<td align="center"><strong>With Mod -- 92 FPS</strong></td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/medium-no_mod.png" width="400"></td>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/medium-mod.png" width="400"></td>
+</tr>
+</table>
+
+### Full results
+
+All screenshots captured with MSI Afterburner overlay. Tested on the same scene, same location, same time of day.
+
+| Quality | DLSS | VSync | Without Mod | With Mod | Improvement |
+|---------|------|-------|-------------|----------|-------------|
+| **Ultra** | Off | ON | 35 FPS | 59 FPS | **+24 FPS (+69%)** |
+| **Ultra** | Balanced | ON | 35 FPS | 54 FPS | **+19 FPS (+54%)** |
+| **High** | Off | ON | 47 FPS | 59 FPS | **+12 FPS (+26%)** |
+| **High** | Quality | OFF | 57 FPS | 68 FPS | **+11 FPS (+19%)** |
+| **Medium** | Off | OFF | 80 FPS | 92 FPS | **+12 FPS (+15%)** |
+| **Medium** | Off | ON | 60 FPS / 79% GPU | 60 FPS / 66% GPU | **13% less GPU load** |
 
 **Key takeaways:**
 - **Ultra quality sees the largest gains** (54-69% improvement) because the disabled effects (SSAO, volumetrics, decals, SSS) are most expensive at high resolution and detail levels
@@ -31,37 +71,79 @@ Tested on the same scene, same location, same time of day. All screenshots captu
 - **DLSS stacks with the mod** -- High + DLSS Quality goes from 57 to 68 FPS
 
 <details>
-<summary>Screenshot evidence (click to expand)</summary>
+<summary>All benchmark screenshots (click to expand)</summary>
 
 #### Ultra -- No DLSS -- VSync ON
-| Without Mod (35 FPS) | With Mod (59 FPS) |
-|---|---|
-| ![Ultra No DLSS - No Mod](media/ultra-no_mod-vsync.png) | ![Ultra No DLSS - With Mod](media/ultra-mod-vsync.png) |
+<table>
+<tr>
+<td align="center"><strong>Without Mod (35 FPS)</strong></td>
+<td align="center"><strong>With Mod (59 FPS)</strong></td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/ultra-no_mod-vsync.png" width="400"></td>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/ultra-mod-vsync.png" width="400"></td>
+</tr>
+</table>
 
 #### Ultra -- DLSS Balanced -- VSync ON
-| Without Mod (35 FPS) | With Mod (54 FPS) |
-|---|---|
-| ![Ultra DLSS Balanced - No Mod](media/ultra-no-mod-dlss-vsync.png) | ![Ultra DLSS Balanced - With Mod](media/ultra-mod-dlss-vsync.png) |
+<table>
+<tr>
+<td align="center"><strong>Without Mod (35 FPS)</strong></td>
+<td align="center"><strong>With Mod (54 FPS)</strong></td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/ultra-no-mod-dlss-vsync.png" width="400"></td>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/ultra-mod-dlss-vsync.png" width="400"></td>
+</tr>
+</table>
 
 #### High -- No DLSS -- VSync ON
-| Without Mod (47 FPS) | With Mod (59 FPS) |
-|---|---|
-| ![High No DLSS - No Mod](media/high-no_mod-vsync.png) | ![High No DLSS - With Mod](media/high-mod-vsync.png) |
+<table>
+<tr>
+<td align="center"><strong>Without Mod (47 FPS)</strong></td>
+<td align="center"><strong>With Mod (59 FPS)</strong></td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/high-no_mod-vsync.png" width="400"></td>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/high-mod-vsync.png" width="400"></td>
+</tr>
+</table>
 
 #### High -- DLSS Quality -- VSync OFF
-| Without Mod (57 FPS) | With Mod (68 FPS) |
-|---|---|
-| ![High DLSS Quality - No Mod](media/high-no_mod-dlss.png) | ![High DLSS Quality - With Mod](media/high-mod-dlss.png) |
+<table>
+<tr>
+<td align="center"><strong>Without Mod (57 FPS)</strong></td>
+<td align="center"><strong>With Mod (68 FPS)</strong></td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/high-no_mod-dlss.png" width="400"></td>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/high-mod-dlss.png" width="400"></td>
+</tr>
+</table>
 
 #### Medium -- No DLSS -- VSync OFF
-| Without Mod (80 FPS) | With Mod (92 FPS) |
-|---|---|
-| ![Medium No DLSS - No Mod](media/medium-no_mod.png) | ![Medium No DLSS - With Mod](media/medium-mod.png) |
+<table>
+<tr>
+<td align="center"><strong>Without Mod (80 FPS)</strong></td>
+<td align="center"><strong>With Mod (92 FPS)</strong></td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/medium-no_mod.png" width="400"></td>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/medium-mod.png" width="400"></td>
+</tr>
+</table>
 
 #### Medium -- No DLSS -- VSync ON
-| Without Mod (60 FPS / 79% GPU) | With Mod (60 FPS / 66% GPU) |
-|---|---|
-| ![Medium No DLSS VSync - No Mod](media/medium-no_mod-vsync.png) | ![Medium No DLSS VSync - With Mod](media/medium-mod-vsync.png) |
+<table>
+<tr>
+<td align="center"><strong>Without Mod (60 FPS / 79% GPU)</strong></td>
+<td align="center"><strong>With Mod (60 FPS / 66% GPU)</strong></td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/medium-no_mod-vsync.png" width="400"></td>
+<td><img src="https://raw.githubusercontent.com/JosiahSiegel/aska-mod-performance-booster/main/media/medium-mod-vsync.png" width="400"></td>
+</tr>
+</table>
 
 </details>
 
