@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+dist/
+
+# Visual Studio / Rider
+*.user
+*.suo
+.vs/
+*.DotSettings.user
+_ReSharper*/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Developer scratch tools (DLL scanners, etc)
+.tools/

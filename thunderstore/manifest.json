@@ -1,0 +1,9 @@
+{
+    "name": "AskaPerformanceBooster",
+    "version_number": "1.0.0",
+    "website_url": "",
+    "description": "Gives ~5-10 extra FPS by disabling expensive HDRP screen-space effects the game menu does not expose. SSR, SSAO, volumetric fog, contact shadows, post-processing removed; shadows reduced. Read-before-write safety. Presets: Moderate (default) / Vanilla / Custom.",
+    "dependencies": [
+        "BepInEx-BepInExPack_IL2CPP-6.0.755"
+    ]
+}
