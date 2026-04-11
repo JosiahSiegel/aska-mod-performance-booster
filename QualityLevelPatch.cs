@@ -11,8 +11,7 @@ namespace AskaPerformanceBooster;
 /// In HDRP, changing the quality level can swap the HDRP Asset (each quality
 /// level can reference a different pipeline asset). This means:
 ///   1. Our cached HDRP Asset reflection becomes stale (wrong object).
-///   2. All QualitySettings properties reset to the new level's defaults.
-///   3. Our _lastSetValues no longer match the current state.
+///   2. Our pipeline support flag writes need re-application.
 ///
 /// This patch sets a flag that PerformanceBehaviour reads on its next Update
 /// to invalidate caches and trigger an immediate full reapplication. We do NOT

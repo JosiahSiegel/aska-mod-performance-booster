@@ -1,8 +1,8 @@
 {
     "name": "AskaPerformanceBooster",
-    "version_number": "1.0.0",
+    "version_number": "1.1.0",
     "website_url": "",
-    "description": "Gives ~5-10 extra FPS by disabling expensive HDRP screen-space effects the game menu does not expose. SSR, SSAO, volumetric fog, contact shadows, post-processing removed; shadows reduced. Read-before-write safety. Presets: Moderate (default) / Vanilla / Custom.",
+    "description": "+11 to +24 FPS (up to 69% gain at Ultra) by disabling hidden HDRP pipeline features (SSAO, volumetrics, decals, SSS, lens flares), removing the 60 FPS cap, disabling shadows on 831+ small objects, and forcing SRP Batcher on. Real benchmarks included.",
     "dependencies": [
         "BepInEx-BepInExPack_IL2CPP-6.0.755"
     ]

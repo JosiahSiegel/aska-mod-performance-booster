@@ -59,7 +59,7 @@ Launch via r2modman's **Start modded** button.
 aska-performance-booster/
   AskaPerformanceBooster.csproj  # Project file (references BepInEx/interop DLLs)
   PerformancePlugin.cs           # BepInEx BasePlugin entry point, config bindings
-  PerformanceBehaviour.cs        # MonoBehaviour: applies all optimizations at runtime
+  PerformanceBehaviour.cs        # MonoBehaviour: applies optimizations at runtime
   HDRPReflectionHelper.cs        # Static helper: HDRP Asset reflection, pipeline support flags
   PresetApplicator.cs            # Preset definitions (Vanilla/Moderate/Custom)
   QualityLevelPatch.cs           # Harmony postfix on QualitySettings.SetQualityLevel
@@ -74,35 +74,34 @@ aska-performance-booster/
 
 ### Design philosophy
 
-**"Read before write, only improve."** Every setting is checked against the game's current value before being overridden. The mod never blindly forces values -- it respects that Aska is a shipped, actively-tuned game.
+**"Only ship what is confirmed working."** Every optimization in this mod has been tested and shown measurable FPS impact. Nothing speculative, nothing unverified.
 
-### Aska's Render Pipeline
+### Confirmed optimizations (6 total)
 
-Aska uses **HDRP** (High Definition Render Pipeline). The IL2CPP concrete type is `UnityEngine.Rendering.HighDefinition.HDRenderPipelineAsset`. All HDRP-specific types are accessed via reflection at runtime -- there is no compile-time dependency on the HDRP assembly.
+1. **HDRP Pipeline Support Flags** (the primary optimization, +11 to +24 FPS) -- writes `supportSSAO=false`, `supportVolumetrics=false`, etc. on the HDRP Asset via NativeFieldInfoPtr property setters
+2. **Frame rate uncap** -- removes Aska's hard-coded 60 FPS cap via Harmony patch on `Application.targetFrameRate` setter
+3. **Small shadow caster disable** -- `shadowCastingMode = Off` on 831+ small renderers per session
+4. **SRP Batcher force-on** -- log confirmed `false -> true`
+5. **HDRP Asset stale check** -- detects quality level changes, re-applies pipeline flags
+6. **Quality level change detection** -- Harmony postfix on `QualitySettings.SetQualityLevel`
 
 ### How the mod works
 
-1. **`PerformancePlugin.Load()`** binds config entries, applies a preset if selected, registers Harmony patches via tolerant `TryPatchClass()`, and adds `PerformanceBehaviour` to a persistent GameObject. Config entries use sentinel values (0, -1, false) to mean "don't override."
+1. **`PerformancePlugin.Load()`** binds config entries, applies a preset if selected, registers Harmony patches, and adds `PerformanceBehaviour` to a persistent GameObject.
 
-2. **`PerformanceBehaviour.Update()`** detects gameplay state (`StreamingWorld` scene active). In diagnostic scan mode, it logs all current values without changing anything. In normal mode, it applies settings with read-before-write logic and re-applies periodically.
+2. **`PerformanceBehaviour.Update()`** detects gameplay state (`StreamingWorld` scene), applies pipeline support flags and SRP Batcher, sets targetFrameRate, and runs the small shadow caster scan after 5 seconds of gameplay.
 
-3. **Settings are applied in two tiers (all read-before-write):**
-   - **Tier 1 (Global):** QualitySettings API (LOD bias, textures, async upload), HDRP Asset pipeline support flags (the PRIMARY optimization -- sets supportSSAO=false etc. via NativeFieldInfoPtr), SRP Batcher verification
-   - **Tier 2 (Volume):** Cosmetic post-processing Volume disables (film grain, chromatic aberration, etc.), HDShadowSettings Volume (shadow distance, cascades), Volume component disables for contact shadows/volumetric clouds/SSS
+3. **`QualityLevelPatch`** detects when the game changes quality level, triggering cache invalidation and full reapplication.
 
-4. **`QualityLevelPatch`** detects when the game changes quality level, triggering immediate cache invalidation and full reapplication.
-
-5. **`PresetApplicator`** sets all config values for a selected preset, using sentinel values for settings that should not be overridden.
+4. **`TargetFrameRatePatch`** intercepts the game's writes to `Application.targetFrameRate` and replaces them with our configured value.
 
 ### Key design decisions
 
 - **Rendering-only mod** -- never touches player transforms, input, or networked state
-- **Pipeline support flags are the primary optimization** -- confirmed 4-5+ FPS improvement. These write directly to native memory via NativeFieldInfoPtr property setters on the HDRP Asset's RenderPipelineSettings struct
-- **Graceful degradation** -- every interop call is wrapped in try/catch; missing properties silently skipped
-- **Managed reflection for HDRP properties** -- System.Reflection on Il2CppInterop wrapper types
-- **Type name substring matching** for volume components -- handles namespace variations
-- **Periodic reapply** -- timer counteracts game quality level resets
-- **Preset-then-Custom pattern** -- presets write to config entries and auto-reset
+- **Pipeline support flags are the primary optimization** -- confirmed +11 to +24 FPS improvement
+- **Graceful degradation** -- every interop call is wrapped in try/catch
+- **HDRPReflectionHelper is a static class** -- IL2CPP ClassInjector can't handle System.Object/Type parameters on MonoBehaviour instance methods
+- **Periodic reapply** -- timer counteracts any game resets
 
 ## Development Workflow
 
@@ -116,16 +115,7 @@ Then launch via r2modman. Check `BepInEx/LogOutput.log` for your plugin's log me
 
 ### Debug logging
 
-Enable `DebugLogging = true` in the config file to see detailed per-setting application logs prefixed with `[Debug]`. This shows every property set, every reflection lookup, and every optimization applied.
-
-### Debugging tips
-
-- Check `LogOutput.log` for lines starting with `[Aska Performance Booster]`
-- "HDRP Asset: ..." confirms the render pipeline asset was accessed and lists settable properties
-- "Frame Setting X: set to false" confirms per-camera feature toggles are working
-- Warnings about "Error applying ..." indicate which tiers are failing
-- Delete `BepInEx/config/com.community.askaperformancebooster.cfg` to reset all settings
-- Delete `BepInEx/interop/` after game updates to regenerate interop assemblies
+Enable `DebugLogging = true` in the config file to see detailed per-setting application logs prefixed with `[Debug]`.
 
 ## How to Contribute
 
@@ -137,8 +127,6 @@ Enable `DebugLogging = true` in the config file to see detailed per-setting appl
 - Mention any other mods installed
 
 ### Submitting changes
-
-**All contributions must be submitted via Pull Request.**
 
 1. **Fork** the repository on GitHub
 2. **Clone** your fork
@@ -154,26 +142,9 @@ Enable `DebugLogging = true` in the config file to see detailed per-setting appl
 - **Target .NET 6.0** -- BepInEx 6 IL2CPP plugins use this framework
 - **Wrap all interop calls in try/catch** -- IL2CPP can throw at any time
 - **Use managed System.Reflection for HDRP properties** -- not compile-time type references
-- **Convert enums via `Enum.ToObject()`** -- IL2CPP wrapper types need the actual enum type
-- **Match volume components by type name substring** -- not exact type comparison
 - **Don't touch player state** -- this mod is rendering-only
-- **Read before write** -- always check the game's current value before overriding
-- **Only reduce, never increase** -- shadow settings, quality levels should only lower, not raise
-- **Prefer reduction over removal where possible** -- the Moderate preset both reduces SSR/SSAO quality via Volume overrides and disables via Frame Settings
-- **Use sentinel values** -- 0, -1, or false to mean "don't override this setting"
-- **Test all 3 presets** -- Vanilla, Moderate, Custom should all produce valid results
-- **Test diagnostic scan mode** -- verify it logs correctly without changing anything
+- **Only add confirmed-working optimizations** -- every feature must have proven FPS impact before merging
 - **Log sparingly** -- one info line per application cycle, debug lines gated behind config toggle
-- **Add config descriptions** -- every setting needs a tooltip explaining what it does and its visual impact
-
-### Areas where help is welcome
-
-- **HDRP Frame Settings discovery** -- test which FrameSettingsField values exist in Aska's Unity 6 HDRP build
-- **Performance profiling** -- quantify FPS gains per optimization on different GPUs
-- **HDRP Volume parameter discovery** -- map exact field names for SSR/SSAO/fog quality parameters
-- **Shadow atlas field discovery** -- the m_RenderPipelineSettings nested struct is hard to navigate via reflection
-- **Aska-specific rendering features** -- find game-specific wasteful settings
-- **Game updates** -- Aska updates may change HDRP settings or add new rendering features
 
 ## Releasing
 
