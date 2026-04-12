@@ -1,6 +1,6 @@
 {
     "name": "AskaPerformanceBooster",
-    "version_number": "1.1.1",
+    "version_number": "1.1.2",
     "website_url": "",
     "description": "+11 to +24 FPS (up to 69% gain at Ultra) by disabling hidden HDRP pipeline features (SSAO, volumetrics, decals, SSS, lens flares), removing the 60 FPS cap, disabling shadows on 831+ small objects, and forcing SRP Batcher on. Real benchmarks included.",
     "dependencies": [

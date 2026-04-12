@@ -17,7 +17,7 @@ public class PerformancePlugin : BasePlugin
 {
     public const string PluginGuid = "com.community.askaperformancebooster";
     public const string PluginName = "Aska Performance Booster";
-    public const string PluginVersion = "1.1.1";
+    public const string PluginVersion = "1.1.2";
 
     internal static new ManualLogSource Log;
 
@@ -181,7 +181,9 @@ public class PerformancePlugin : BasePlugin
         CfgPipelineDisableDecals = Config.Bind("1. Pipeline", "PipelineDisableDecals", false,
             "PIPELINE-LEVEL disable of decal rendering. " +
             "Sets supportDecals=false on the HDRP Asset. " +
-            "Removes all decals (scorch marks, footprints, etc.).");
+            "WARNING: Aska uses HDRP DecalProjectors for the terraforming grid overlay " +
+            "(green/red placement squares). Enabling this WILL hide that grid. " +
+            "Kept false in all presets.");
 
         CfgPipelineDisableDistortion = Config.Bind("1. Pipeline", "PipelineDisableDistortion", false,
             "PIPELINE-LEVEL disable of distortion effects (heat haze, refraction). " +

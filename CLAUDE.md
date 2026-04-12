@@ -34,7 +34,7 @@ Six files do all the work:
 
 ### What is confirmed working (and kept)
 
-1. **Pipeline support flags** (7 features) -- `supportSSAO=false`, `supportVolumetrics=false`, `supportVolumetricClouds=false`, `supportSubsurfaceScattering=false`, `supportDecals=false`, `supportScreenSpaceLensFlare=false`, `supportDataDrivenLensFlare=false`. The primary optimization. 4-5+ FPS proven.
+1. **Pipeline support flags** (6 features) -- `supportSSAO=false`, `supportVolumetrics=false`, `supportVolumetricClouds=false`, `supportSubsurfaceScattering=false`, `supportScreenSpaceLensFlare=false`, `supportDataDrivenLensFlare=false`. The primary optimization. 4-5+ FPS proven.
 
 2. **targetFrameRate = -1** (uncap) + `TargetFrameRatePatch` Harmony patch -- removes Aska's 60 FPS hard cap.
 
@@ -58,7 +58,7 @@ Six files do all the work:
   PipelineDisableVolumetrics = false     (default, Moderate=true)
   PipelineDisableVolumetricClouds = false (default, Moderate=true)
   PipelineDisableSubsurfaceScattering = false (default, Moderate=true)
-  PipelineDisableDecals = false          (default, Moderate=true)
+  PipelineDisableDecals = false          (kept false -- hides terraform grid)
   PipelineDisableSSR = false            (kept false -- stale texture artifact)
   PipelineDisableDistortion = false     (kept false)
   PipelineDisableSSRTransparent = false (kept false)
@@ -82,7 +82,7 @@ Six files do all the work:
 ### Critical invariants
 
 - **Pipeline support flags are the PRIMARY optimization.** These write directly to RenderPipelineSettings via NativeFieldInfoPtr property setters. HDRP checks them per-frame during Frame Settings aggregation. Confirmed 4-5+ FPS improvement.
-- **SSR, Distortion, and Transparent SSR must stay enabled (false).** Disabling them stops the render pass but leaves the texture with stale screen data, causing visible artifacts.
+- **SSR, Distortion, Transparent SSR, and Decals must stay enabled (false).** SSR/Distortion/Transparent SSR cause stale-texture artifacts. Decals must stay enabled because Aska uses HDRP DecalProjectors for the terraforming grid overlay (green/red placement squares); disabling them hides the grid entirely.
 - **`HDRPReflectionHelper` must be a static class, not on the MonoBehaviour.** IL2CPP's ClassInjector processes all instance methods on MonoBehaviour subclasses and chokes on System.Object/System.Type/PropertyInfo parameter types.
 - **Harmony patches use the string overload** for IL2CPP interop compatibility (`[HarmonyTargetMethod]` with `AccessTools.TypeByName`).
 - **`TargetFrameRatePatch` uses a reentrancy guard** (`_inSelfWrite`) to prevent infinite recursion when writing our own value from inside the prefix.

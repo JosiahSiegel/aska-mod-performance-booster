@@ -57,12 +57,14 @@ internal static class PresetApplicator
         // Pipeline support flags -- THE PRIMARY OPTIMIZATION (4-5+ FPS confirmed).
         // SSR, Distortion, and Transparent SSR are intentionally LEFT ENABLED
         // to avoid stale-texture artifacts.
+        // Decals are LEFT ENABLED because Aska uses HDRP DecalProjectors for
+        // the terraforming grid overlay (green/red placement squares).
         PerformancePlugin.CfgPipelineDisableSSR.Value = false;
         PerformancePlugin.CfgPipelineDisableSSAO.Value = true;
         PerformancePlugin.CfgPipelineDisableVolumetrics.Value = true;
         PerformancePlugin.CfgPipelineDisableVolumetricClouds.Value = true;
         PerformancePlugin.CfgPipelineDisableSubsurfaceScattering.Value = true;
-        PerformancePlugin.CfgPipelineDisableDecals.Value = true;
+        PerformancePlugin.CfgPipelineDisableDecals.Value = false;
         PerformancePlugin.CfgPipelineDisableDistortion.Value = false;
         PerformancePlugin.CfgPipelineDisableSSRTransparent.Value = false;
         PerformancePlugin.CfgPipelineDisableScreenSpaceLensFlare.Value = true;
