@@ -59,6 +59,10 @@
       <HintPath>$(R2ModManDir)\interop\Unity.RenderPipelines.Core.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(R2ModManDir)\interop\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(R2ModManDir)\interop\Assembly-CSharp.dll</HintPath>
       <Private>false</Private>

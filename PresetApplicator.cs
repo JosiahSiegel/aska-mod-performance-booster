@@ -44,12 +44,28 @@ internal static class PresetApplicator
         // Shadows -- stock
         PerformancePlugin.CfgDisableSmallShadowCasters.Value = false;
         PerformancePlugin.CfgSmallShadowCasterThreshold.Value = 1.0f;
+        PerformancePlugin.CfgDisableResourceShadowCasters.Value = false;
+        PerformancePlugin.CfgResourceShadowCasterThreshold.Value = 5.0f;
+        PerformancePlugin.CfgDisableEnvironmentShadowCasters.Value = false;
+        PerformancePlugin.CfgEnvironmentShadowCasterThreshold.Value = 5.0f;
+        PerformancePlugin.CfgShadowMaxShadowRequests.Value = 0;          // don't override
+        PerformancePlugin.CfgShadowMaxDirectionalResolution.Value = 0;   // don't override
+        PerformancePlugin.CfgShadowMaxAreaResolution.Value = 0;          // don't override
+        PerformancePlugin.CfgShadowAreaFilteringQuality.Value = -1;      // don't override
 
         // Draw calls -- stock
         PerformancePlugin.CfgForceSRPBatcher.Value = false;
 
         // Frame rate -- don't override
         PerformancePlugin.CfgTargetFrameRate.Value = 0;
+
+        // LOD bias -- don't override
+        PerformancePlugin.CfgLodBias.Value = 0f;
+
+        // Diagnostics -- off
+        PerformancePlugin.CfgEnableDiagnostics.Value = false;
+        PerformancePlugin.CfgLogObjectBreakdown.Value = false;
+        PerformancePlugin.CfgLogFrameTimings.Value = false;
     }
 
     private static void ApplyModerate()
@@ -74,10 +90,36 @@ internal static class PresetApplicator
         PerformancePlugin.CfgDisableSmallShadowCasters.Value = true;
         PerformancePlugin.CfgSmallShadowCasterThreshold.Value = 1.0f;
 
+        // Resource shadow casters -- 5,100+ accumulable objects (sticks, firewood, stones, etc.)
+        PerformancePlugin.CfgDisableResourceShadowCasters.Value = true;
+        PerformancePlugin.CfgResourceShadowCasterThreshold.Value = 5.0f;
+
+        // Environment shadow casters -- grass, cave flora (~1,500+ objects)
+        PerformancePlugin.CfgDisableEnvironmentShadowCasters.Value = true;
+        PerformancePlugin.CfgEnvironmentShadowCasterThreshold.Value = 5.0f;
+
+        // HDRP Shadow init params -- reduce shadow system capacity/quality
+        // maxShadowRequests: 128 -> 48 (covers typical Aska scenes)
+        // maxDirectionalShadowMapResolution: 2048 -> 1024 (75% fill rate reduction)
+        // maxAreaShadowMapResolution: 2048 -> 1024 (area shadows are soft by design)
+        // areaShadowFilteringQuality: Medium -> Low (match punctual/directional)
+        PerformancePlugin.CfgShadowMaxShadowRequests.Value = 48;
+        PerformancePlugin.CfgShadowMaxDirectionalResolution.Value = 1024;
+        PerformancePlugin.CfgShadowMaxAreaResolution.Value = 1024;
+        PerformancePlugin.CfgShadowAreaFilteringQuality.Value = 0;       // Low
+
         // SRP Batcher -- log confirmed false -> true
         PerformancePlugin.CfgForceSRPBatcher.Value = true;
 
         // Frame rate -- remove Aska's 60 FPS hard cap
         PerformancePlugin.CfgTargetFrameRate.Value = -1;
+
+        // LOD bias -- force earlier LOD transitions for 9,000+ renderers
+        PerformancePlugin.CfgLodBias.Value = 0.75f;
+
+        // Diagnostics -- off by default even in Moderate
+        PerformancePlugin.CfgEnableDiagnostics.Value = false;
+        PerformancePlugin.CfgLogObjectBreakdown.Value = false;
+        PerformancePlugin.CfgLogFrameTimings.Value = false;
     }
 }

@@ -17,7 +17,7 @@ public class PerformancePlugin : BasePlugin
 {
     public const string PluginGuid = "com.community.askaperformancebooster";
     public const string PluginName = "Aska Performance Booster";
-    public const string PluginVersion = "1.1.2";
+    public const string PluginVersion = "1.2.0";
 
     internal static new ManualLogSource Log;
 
@@ -46,6 +46,17 @@ public class PerformancePlugin : BasePlugin
     // =====================================================================
     public static ConfigEntry<bool> CfgDisableSmallShadowCasters;
     public static ConfigEntry<float> CfgSmallShadowCasterThreshold;
+    public static ConfigEntry<bool> CfgDisableResourceShadowCasters;
+    public static ConfigEntry<float> CfgResourceShadowCasterThreshold;
+
+    public static ConfigEntry<bool> CfgDisableEnvironmentShadowCasters;
+    public static ConfigEntry<float> CfgEnvironmentShadowCasterThreshold;
+
+    // HDRP Shadow Init Parameters (hdShadowInitParams on HDRP Asset)
+    public static ConfigEntry<int> CfgShadowMaxShadowRequests;
+    public static ConfigEntry<int> CfgShadowMaxDirectionalResolution;
+    public static ConfigEntry<int> CfgShadowMaxAreaResolution;
+    public static ConfigEntry<int> CfgShadowAreaFilteringQuality;
 
     // =====================================================================
     //  3. Draw Calls
@@ -61,6 +72,15 @@ public class PerformancePlugin : BasePlugin
     //  5. Misc
     // =====================================================================
     public static ConfigEntry<float> CfgReapplyInterval;
+    public static ConfigEntry<float> CfgLodBias;
+
+    // =====================================================================
+    //  6. Diagnostics
+    // =====================================================================
+    public static ConfigEntry<bool> CfgEnableDiagnostics;
+    public static ConfigEntry<float> CfgDiagnosticIntervalSeconds;
+    public static ConfigEntry<bool> CfgLogObjectBreakdown;
+    public static ConfigEntry<bool> CfgLogFrameTimings;
 
     public override void Load()
     {
@@ -216,6 +236,70 @@ public class PerformancePlugin : BasePlugin
                 "DisableSmallShadowCasters is true.",
                 new AcceptableValueRange<float>(0.1f, 5.0f)));
 
+        CfgDisableResourceShadowCasters = Config.Bind("2. Shadows", "DisableResourceShadowCasters", true,
+            "Disable shadow casting on player-accumulable resource objects " +
+            "(sticks, firewood, stones, resin, bark, logs, bone fragments). " +
+            "These pile up in the hundreds/thousands as the player chops and gathers, " +
+            "and their shadows are imperceptible. 5,100+ objects confirmed in late-game sessions. " +
+            "Uses a higher bounds threshold than small shadow casters since many " +
+            "resource objects (e.g. logs) exceed 1.0m but still don't need shadows.");
+
+        CfgResourceShadowCasterThreshold = Config.Bind("2. Shadows", "ResourceShadowCasterThreshold", 5.0f,
+            new ConfigDescription(
+                "Bounds size magnitude threshold (metres) for resource shadow caster " +
+                "disabling. Resource objects below this size have shadows disabled. " +
+                "Higher than SmallShadowCasterThreshold because resource objects like " +
+                "logs can be large but still don't produce meaningful shadows. " +
+                "Only used when DisableResourceShadowCasters is true.",
+                new AcceptableValueRange<float>(0.5f, 15.0f)));
+
+        CfgDisableEnvironmentShadowCasters = Config.Bind("2. Shadows", "DisableEnvironmentShadowCasters", true,
+            "Disable shadow casting on environment objects that produce imperceptible " +
+            "shadows (grass clumps, cave flora). Grass shadows fall on other grass " +
+            "creating uniform darkening that looks nearly identical without them. " +
+            "~1,500+ objects in typical scenes.");
+
+        CfgEnvironmentShadowCasterThreshold = Config.Bind("2. Shadows", "EnvironmentShadowCasterThreshold", 5.0f,
+            new ConfigDescription(
+                "Bounds size magnitude threshold (metres) for environment shadow caster " +
+                "disabling. Environment objects below this size have shadows disabled. " +
+                "Only used when DisableEnvironmentShadowCasters is true.",
+                new AcceptableValueRange<float>(0.5f, 15.0f)));
+
+        CfgShadowMaxShadowRequests = Config.Bind("2. Shadows", "ShadowMaxShadowRequests", 0,
+            new ConfigDescription(
+                "HDRP Asset: maximum shadow map render requests per frame. " +
+                "Each shadow-casting light consumes one or more requests (directional " +
+                "cascades use 4). Game default is 128. Reducing to 48 cuts GPU shadow " +
+                "workload while covering typical Aska scenes. " +
+                "0 = don't override (use game default).",
+                new AcceptableValueRange<int>(0, 128)));
+
+        CfgShadowMaxDirectionalResolution = Config.Bind("2. Shadows", "ShadowMaxDirectionalResolution", 0,
+            new ConfigDescription(
+                "HDRP Asset: maximum resolution per directional shadow cascade. " +
+                "Game default is 2048. Reducing to 1024 cuts directional shadow fill " +
+                "rate by 75% (4 cascades x 2048^2 -> 4 x 1024^2). Shadow edges " +
+                "become softer but filtering is already Low. " +
+                "0 = don't override. Must be power of 2.",
+                new AcceptableValueRange<int>(0, 4096)));
+
+        CfgShadowMaxAreaResolution = Config.Bind("2. Shadows", "ShadowMaxAreaResolution", 0,
+            new ConfigDescription(
+                "HDRP Asset: maximum area light shadow map resolution. " +
+                "Game default is 2048. Reducing to 1024 saves GPU fill rate on " +
+                "area light shadows. Area shadows are inherently soft so the " +
+                "quality loss is minimal. 0 = don't override. Must be power of 2.",
+                new AcceptableValueRange<int>(0, 4096)));
+
+        CfgShadowAreaFilteringQuality = Config.Bind("2. Shadows", "ShadowAreaFilteringQuality", -1,
+            new ConfigDescription(
+                "HDRP Asset: area light shadow filtering quality. " +
+                "Game default is Medium (1). Low (0) reduces PCF filter taps, " +
+                "matching the punctual and directional filtering which are already Low. " +
+                "-1 = don't override. Values: 0=Low, 1=Medium, 2=High.",
+                new AcceptableValueRange<int>(-1, 2)));
+
         // -- 3. Draw Calls --
         CfgForceSRPBatcher = Config.Bind("3. Draw Calls", "ForceSRPBatcher", true,
             "Force the SRP Batcher on. Log confirmed Aska ships with it off " +
@@ -234,12 +318,45 @@ public class PerformancePlugin : BasePlugin
                 new AcceptableValueRange<int>(-1, 300)));
 
         // -- 5. Misc --
+        CfgLodBias = Config.Bind("5. Misc", "LodBias", 0f,
+            new ConfigDescription(
+                "Override LOD bias to force lower-poly LOD levels sooner. " +
+                "Reduces vertex count for distant objects across 9,000-10,000+ renderers. " +
+                "Game default is typically 1.0-2.0. Reducing to 0.75 forces LOD transitions " +
+                "closer to the camera with subtle visual change at medium distance. " +
+                "0 = don't override (use game default).",
+                new AcceptableValueRange<float>(0f, 5.0f)));
+
         CfgReapplyInterval = Config.Bind("5. Misc", "ReapplyIntervalSeconds", 10f,
             new ConfigDescription(
                 "How often (seconds) to re-apply settings as a safety net. " +
                 "Quality level changes are detected instantly via Harmony patch. " +
                 "0 = apply once only.",
                 new AcceptableValueRange<float>(0f, 120f)));
+
+        // -- 6. Diagnostics --
+        CfgEnableDiagnostics = Config.Bind("6. Diagnostics", "EnableDiagnostics", false,
+            "Master toggle for runtime diagnostics logging. " +
+            "When enabled, logs FPS, renderer counts, rigidbody counts, and " +
+            "shadow stats to BepInEx/LogOutput.log at a configurable interval. " +
+            "Zero cost when disabled.");
+
+        CfgDiagnosticIntervalSeconds = Config.Bind("6. Diagnostics", "DiagnosticIntervalSeconds", 10f,
+            new ConfigDescription(
+                "How often (seconds) to log diagnostic stats. " +
+                "Lower values give more granular data but produce more log output.",
+                new AcceptableValueRange<float>(5f, 120f)));
+
+        CfgLogObjectBreakdown = Config.Bind("6. Diagnostics", "LogObjectBreakdown", false,
+            "EXPENSIVE: Categorize all renderers by GameObject name and log " +
+            "the top 10 categories by count. Useful for identifying which object " +
+            "types dominate the scene. Only runs on the diagnostic interval.");
+
+        CfgLogFrameTimings = Config.Bind("6. Diagnostics", "LogFrameTimings", false,
+            "Use Unity's FrameTimingManager to log CPU vs GPU frame times. " +
+            "Shows whether the game is CPU-bound or GPU-bound. " +
+            "CaptureFrameTimings() is called every frame (cheap); " +
+            "timings are only read and logged on the diagnostic interval.");
 
         // -- Apply preset if not Custom --
         Log.LogInfo($"Config preset on load: {CfgPreset.Value}");

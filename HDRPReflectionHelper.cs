@@ -46,6 +46,20 @@ internal static class HDRPReflectionHelper
     internal static PropertyInfo PropSupportDataDrivenLensFlare;
     internal static PropertyInfo PropSupportScreenSpaceLensFlare;
 
+    // ------------------------------------------------------------------
+    //  HDRP Shadow Init Parameters (hdShadowInitParams on RenderPipelineSettings)
+    // ------------------------------------------------------------------
+    internal static object HdShadowInitParamsRef;
+    internal static Type HdShadowInitParamsType;
+    internal static PropertyInfo PropHdShadowInitParams;
+
+    // Writable shadow properties on HDShadowInitParameters
+    internal static PropertyInfo PropMaxShadowRequests;
+    internal static PropertyInfo PropMaxDirectionalShadowMapResolution;
+    internal static PropertyInfo PropMaxPunctualShadowMapResolution;
+    internal static PropertyInfo PropMaxAreaShadowMapResolution;
+    internal static PropertyInfo PropAreaShadowFilteringQuality;
+
     // Track which HDRP Asset the reflection cache was built for.
     private static int _cachedHdrpAssetInstanceId = -1;
 
@@ -126,6 +140,7 @@ internal static class HDRPReflectionHelper
                         PerformancePlugin.Log.LogInfo(
                             $"RenderPipelineSettings resolved: type={RenderPipelineSettingsType.FullName}");
                         CacheSupportFlagProperties();
+                        CacheShadowInitProperties();
                     }
                     else
                     {
@@ -172,6 +187,58 @@ internal static class HDRPReflectionHelper
         PropSupportScreenSpaceLensFlare = FindProp(st, "supportScreenSpaceLensFlare");
     }
 
+    /// <summary>
+    /// Resolve the hdShadowInitParams nested struct on RenderPipelineSettings
+    /// and cache PropertyInfo handles for writable shadow properties.
+    /// </summary>
+    private static void CacheShadowInitProperties()
+    {
+        if (RenderPipelineSettingsType == null || RenderPipelineSettingsRef == null) return;
+
+        try
+        {
+            // Locate hdShadowInitParams property on RenderPipelineSettings
+            PropHdShadowInitParams = FindProp(RenderPipelineSettingsType, "hdShadowInitParams");
+            if (PropHdShadowInitParams == null)
+            {
+                DebugLog("hdShadowInitParams property not found on RenderPipelineSettings.");
+                return;
+            }
+
+            HdShadowInitParamsRef = PropHdShadowInitParams.GetValue(RenderPipelineSettingsRef);
+            if (HdShadowInitParamsRef == null)
+            {
+                DebugLog("hdShadowInitParams returned null.");
+                return;
+            }
+
+            HdShadowInitParamsType = HdShadowInitParamsRef.GetType();
+
+            // Cache individual shadow properties
+            PropMaxShadowRequests = FindProp(HdShadowInitParamsType, "maxShadowRequests");
+            PropMaxDirectionalShadowMapResolution = FindProp(HdShadowInitParamsType, "maxDirectionalShadowMapResolution");
+            PropMaxPunctualShadowMapResolution = FindProp(HdShadowInitParamsType, "maxPunctualShadowMapResolution");
+            PropMaxAreaShadowMapResolution = FindProp(HdShadowInitParamsType, "maxAreaShadowMapResolution");
+            PropAreaShadowFilteringQuality = FindProp(HdShadowInitParamsType, "areaShadowFilteringQuality");
+
+            // Log discovery results
+            string maxReqVal = PropMaxShadowRequests != null ? SafeGetInt(PropMaxShadowRequests, HdShadowInitParamsRef).ToString() : "N/A";
+            string maxDirVal = PropMaxDirectionalShadowMapResolution != null ? SafeGetInt(PropMaxDirectionalShadowMapResolution, HdShadowInitParamsRef).ToString() : "N/A";
+            string maxPuncVal = PropMaxPunctualShadowMapResolution != null ? SafeGetInt(PropMaxPunctualShadowMapResolution, HdShadowInitParamsRef).ToString() : "N/A";
+            string maxAreaVal = PropMaxAreaShadowMapResolution != null ? SafeGetInt(PropMaxAreaShadowMapResolution, HdShadowInitParamsRef).ToString() : "N/A";
+            string areaFilterVal = PropAreaShadowFilteringQuality != null ? SafeGetEnum(PropAreaShadowFilteringQuality, HdShadowInitParamsRef) : "N/A";
+
+            PerformancePlugin.Log.LogInfo(
+                $"HDShadowInitParams cached: maxShadowRequests={maxReqVal}, " +
+                $"maxDirShadowRes={maxDirVal}, maxPuncShadowRes={maxPuncVal}, " +
+                $"maxAreaShadowRes={maxAreaVal}, areaFilterQuality={areaFilterVal}");
+        }
+        catch (Exception ex)
+        {
+            PerformancePlugin.Log.LogWarning($"Failed to cache shadow init properties: {ex.Message}");
+        }
+    }
+
     private static void TryFindSettingsViaInternalField(Type assetType)
     {
         try
@@ -196,6 +263,7 @@ internal static class HDRPReflectionHelper
                         $"RenderPipelineSettings resolved via m_RenderPipelineSettings field: " +
                         $"type={RenderPipelineSettingsType.FullName}");
                     CacheSupportFlagProperties();
+                    CacheShadowInitProperties();
                 }
             }
             else
@@ -362,6 +430,195 @@ internal static class HDRPReflectionHelper
     }
 
     // ==================================================================
+    //  Shadow init parameter writes
+    // ==================================================================
+
+    /// <summary>
+    /// Apply shadow init parameter overrides to the HDRP Asset.
+    /// Each parameter uses a sentinel value to indicate "don't override":
+    ///   int  0 = don't override
+    ///   int -1 = don't override (for areaShadowFilteringQuality)
+    /// </summary>
+    internal static void ApplyShadowInitParams(
+        int maxShadowRequests,
+        int maxDirectionalShadowMapResolution,
+        int maxAreaShadowMapResolution,
+        int areaShadowFilteringQuality)
+    {
+        if (HdShadowInitParamsRef == null || HdShadowInitParamsType == null)
+        {
+            DebugLog("Shadow init params: not cached, skipping.");
+            return;
+        }
+
+        bool anyChanged = false;
+
+        if (maxShadowRequests > 0)
+            anyChanged |= WriteShadowInt(PropMaxShadowRequests, "maxShadowRequests", maxShadowRequests);
+
+        if (maxDirectionalShadowMapResolution > 0)
+            anyChanged |= WriteShadowInt(PropMaxDirectionalShadowMapResolution, "maxDirectionalShadowMapResolution", maxDirectionalShadowMapResolution);
+
+        if (maxAreaShadowMapResolution > 0)
+            anyChanged |= WriteShadowInt(PropMaxAreaShadowMapResolution, "maxAreaShadowMapResolution", maxAreaShadowMapResolution);
+
+        if (areaShadowFilteringQuality >= 0)
+            anyChanged |= WriteShadowEnum(PropAreaShadowFilteringQuality, "areaShadowFilteringQuality", areaShadowFilteringQuality);
+
+        if (anyChanged)
+        {
+            WriteShadowInitParamsBack();
+            WriteSettingsBackToAsset();
+            PerformancePlugin.Log.LogInfo("Shadow init params: wrote changes back to HDRP Asset.");
+        }
+        else
+        {
+            DebugLog("Shadow init params: all values already at target.");
+        }
+    }
+
+    /// <summary>
+    /// Write an int property on HdShadowInitParamsRef. Returns true if the value changed.
+    /// Uses Math.Min to ensure we never INCREASE the value beyond what the game already
+    /// has -- if the user's quality preset already uses a lower (cheaper) value, we
+    /// keep it rather than overriding with our higher target.
+    /// </summary>
+    private static bool WriteShadowInt(PropertyInfo prop, string name, int targetValue)
+    {
+        if (prop == null)
+        {
+            DebugLog($"Shadow param {name}: property not found, skipping.");
+            return false;
+        }
+
+        try
+        {
+            int current = SafeGetInt(prop, HdShadowInitParamsRef);
+
+            // Never increase: use the lesser of current and target.
+            // If the game's quality preset already has a lower value (e.g. Low preset
+            // with maxShadowRequests=32), writing our target of 48 would INCREASE cost.
+            int effective = Math.Min(current, targetValue);
+
+            if (current == effective)
+            {
+                DebugLog($"Shadow param {name}: already {current} (<= target {targetValue}), no change.");
+                return false;
+            }
+
+            prop.SetValue(HdShadowInitParamsRef, effective);
+            PerformancePlugin.Log.LogInfo($"Shadow param: {name} = {current} -> {effective} (target was {targetValue})");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            PerformancePlugin.Log.LogWarning($"Could not write shadow param {name}: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Write an enum property on HdShadowInitParamsRef using its int value.
+    /// HDRP shadow filtering quality enums map to int values:
+    ///   HDAreaShadowFilteringQuality: Low=0, Medium=1, High=2
+    /// Returns true if the value changed.
+    ///
+    /// Uses Math.Min on the underlying int values to ensure we never INCREASE
+    /// quality beyond what the game already has. For quality enums where
+    /// lower int = lower quality (Low=0, Medium=1, High=2), Min picks the
+    /// cheaper option.
+    ///
+    /// NOTE: IL2CPP enum wrappers may not convert correctly via Convert.ToInt32().
+    /// We use ToString() comparison as a fallback to detect the current value,
+    /// and always write if the string representation doesn't match the target.
+    /// </summary>
+    private static bool WriteShadowEnum(PropertyInfo prop, string name, int targetValue)
+    {
+        if (prop == null)
+        {
+            DebugLog($"Shadow param {name}: property not found, skipping.");
+            return false;
+        }
+
+        try
+        {
+            object currentObj = prop.GetValue(HdShadowInitParamsRef);
+            string currentStr = currentObj?.ToString() ?? "null";
+
+            // Try to get the current int value for Min comparison.
+            // For quality enums (Low=0, Medium=1, High=2), lower = cheaper.
+            int currentInt = targetValue; // fallback: no Min applied
+            try
+            {
+                currentInt = Convert.ToInt32(currentObj);
+            }
+            catch
+            {
+                // IL2CPP enum wrapper didn't convert -- fall through to string compare
+            }
+
+            // Never increase: use the lesser of current and target.
+            int effectiveInt = Math.Min(currentInt, targetValue);
+
+            object effectiveEnum = Enum.ToObject(prop.PropertyType, effectiveInt);
+            string effectiveStr = effectiveEnum?.ToString() ?? "null";
+
+            if (string.Equals(currentStr, effectiveStr, StringComparison.OrdinalIgnoreCase))
+            {
+                DebugLog($"Shadow param {name}: already {currentStr} (<= target {targetValue}), no change.");
+                return false;
+            }
+
+            prop.SetValue(HdShadowInitParamsRef, effectiveEnum);
+            PerformancePlugin.Log.LogInfo($"Shadow param: {name} = {currentStr} -> {effectiveStr} (target was {targetValue})");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            PerformancePlugin.Log.LogWarning($"Could not write shadow param {name}: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Write the modified HDShadowInitParameters back to RenderPipelineSettings.
+    /// The NativeFieldInfoPtr setters on IL2CPP structs may already write through,
+    /// but this is a safety net (same pattern as WriteSettingsBackToAsset).
+    /// </summary>
+    private static void WriteShadowInitParamsBack()
+    {
+        if (PropHdShadowInitParams == null || RenderPipelineSettingsRef == null ||
+            HdShadowInitParamsRef == null)
+            return;
+
+        try
+        {
+            if (PropHdShadowInitParams.GetSetMethod(true) != null)
+            {
+                PropHdShadowInitParams.SetValue(RenderPipelineSettingsRef, HdShadowInitParamsRef);
+                DebugLog("Wrote HDShadowInitParams back via property setter.");
+                return;
+            }
+
+            // Fallback: try field write
+            if (RenderPipelineSettingsType != null)
+            {
+                var field = RenderPipelineSettingsType.GetField("hdShadowInitParams",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (field != null)
+                {
+                    field.SetValue(RenderPipelineSettingsRef, HdShadowInitParamsRef);
+                    DebugLog("Wrote HDShadowInitParams back via field.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLog($"Could not write HDShadowInitParams back: {ex.Message}");
+        }
+    }
+
+    // ==================================================================
     //  HDRP Asset staleness detection
     // ==================================================================
 
@@ -427,7 +684,97 @@ internal static class HDRPReflectionHelper
         PropSupportDataDrivenLensFlare = null;
         PropSupportScreenSpaceLensFlare = null;
 
+        HdShadowInitParamsRef = null;
+        HdShadowInitParamsType = null;
+        PropHdShadowInitParams = null;
+        PropMaxShadowRequests = null;
+        PropMaxDirectionalShadowMapResolution = null;
+        PropMaxPunctualShadowMapResolution = null;
+        PropMaxAreaShadowMapResolution = null;
+        PropAreaShadowFilteringQuality = null;
+
         DebugLog("HDRP reflection cache invalidated.");
+    }
+
+    // ==================================================================
+    //  Shadow property discovery (debug-only)
+    // ==================================================================
+
+    /// <summary>
+    /// Enumerates all shadow-related properties on RenderPipelineSettings
+    /// and any nested shadow init parameter structs. Run once with
+    /// DebugLogging=true to discover exact IL2CPP property names for
+    /// shadow distance, cascade count, atlas resolution, etc.
+    /// </summary>
+    internal static void DumpShadowProperties()
+    {
+        if (RenderPipelineSettingsRef == null || RenderPipelineSettingsType == null)
+        {
+            PerformancePlugin.Log.LogInfo("[ShadowDiscover] RenderPipelineSettings not available.");
+            return;
+        }
+
+        PerformancePlugin.Log.LogInfo("[ShadowDiscover] === RenderPipelineSettings shadow-related properties ===");
+
+        try
+        {
+            foreach (var prop in RenderPipelineSettingsType.GetProperties(
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+            {
+                if (prop.Name.IndexOf("shadow", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    prop.Name.IndexOf("Shadow", StringComparison.Ordinal) < 0)
+                    continue;
+
+                string val = "?";
+                try { val = prop.GetValue(RenderPipelineSettingsRef)?.ToString() ?? "null"; }
+                catch (Exception ex) { val = $"<error: {ex.Message}>"; }
+
+                PerformancePlugin.Log.LogInfo(
+                    $"[ShadowDiscover] {RenderPipelineSettingsType.Name}.{prop.Name} " +
+                    $"({prop.PropertyType.Name}) = {val}");
+
+                // If the property returns a struct/object, enumerate its shadow-related props too
+                if (!prop.PropertyType.IsPrimitive && prop.PropertyType != typeof(string) &&
+                    prop.PropertyType != typeof(bool))
+                {
+                    try
+                    {
+                        object nested = prop.GetValue(RenderPipelineSettingsRef);
+                        if (nested != null)
+                            DumpNestedShadowProps(nested, prop.Name);
+                    }
+                    catch { }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            PerformancePlugin.Log.LogWarning($"[ShadowDiscover] Error enumerating properties: {ex.Message}");
+        }
+
+        PerformancePlugin.Log.LogInfo("[ShadowDiscover] === End shadow property dump ===");
+    }
+
+    private static void DumpNestedShadowProps(object obj, string parentName)
+    {
+        if (obj == null) return;
+        Type t = obj.GetType();
+
+        try
+        {
+            foreach (var prop in t.GetProperties(
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+            {
+                string val = "?";
+                try { val = prop.GetValue(obj)?.ToString() ?? "null"; }
+                catch (Exception ex) { val = $"<error: {ex.Message}>"; }
+
+                PerformancePlugin.Log.LogInfo(
+                    $"[ShadowDiscover]   {parentName}.{prop.Name} " +
+                    $"({prop.PropertyType.Name}) = {val}");
+            }
+        }
+        catch { }
     }
 
     // ==================================================================
@@ -536,5 +883,28 @@ internal static class HDRPReflectionHelper
             return Convert.ToBoolean(val);
         }
         catch { return false; }
+    }
+
+    internal static int SafeGetInt(PropertyInfo prop, object target)
+    {
+        if (prop == null) return 0;
+        try
+        {
+            var val = prop.GetValue(target);
+            if (val is int i) return i;
+            return Convert.ToInt32(val);
+        }
+        catch { return 0; }
+    }
+
+    internal static string SafeGetEnum(PropertyInfo prop, object target)
+    {
+        if (prop == null) return "N/A";
+        try
+        {
+            var val = prop.GetValue(target);
+            return val?.ToString() ?? "null";
+        }
+        catch { return "error"; }
     }
 }
